@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CyberRiskGuardian</title>
+<meta name="description" content="CyberRiskGuardian Mobile: CRG risk calculator, CVSS v4.0 scorer, scenario register and budget calibrator, with Apple Intelligence through Shortcuts.">
+<meta name="theme-color" content="#F2F4F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1724" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CRG">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ CALCULATOR ============ -->
+  <section class="view" id="view-calc" data-title="Calculator">
+    <header class="bar">
+      <div class="bar-row">
+        <h1>Risk</h1>
+        <button class="icon-btn" data-open-settings aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4Z"/></svg></button>
+      </div>
+      <div class="strip" id="calc-strip" aria-live="polite">
+        <span class="strip-ratio" id="strip-ratio">–</span>
+        <span class="pill" id="strip-pill">Enter values</span>
+        <span class="strip-id" id="strip-id"></span>
+      </div>
+    </header>
+    <div class="content">
+      <div class="note example" id="calc-example-note" hidden>Example values from the fictional MediBec case. Replace them with your own.</div>
+
+      <h2 class="group-title">Scenario</h2>
+      <div class="group">
+        <label class="field"><span>Name</span><input id="f-name" type="text" autocomplete="off" placeholder="e.g. Ransomware on the EHR via VPN"></label>
+        <label class="field stack"><span>Causal chain</span><textarea id="f-statement" rows="3" placeholder="Threat source → weakness → asset → event → consequence"></textarea></label>
+      </div>
+
+      <h2 class="group-title">Likelihood</h2>
+      <div class="group" id="g-likelihood"></div>
+      <h2 class="group-title">Impact and criticality</h2>
+      <div class="group" id="g-impact"></div>
+      <h2 class="group-title">Resilience</h2>
+      <div class="group" id="g-res"></div>
+
+      <h2 class="group-title">Technical severity</h2>
+      <div class="group">
+        <div class="row">
+          <div class="row-main">
+            <div class="row-label">CVSS v4.0 base score</div>
+            <div class="mono small muted wrap" id="calc-cvss-vector">–</div>
+          </div>
+          <div class="score-chip" id="calc-cvss-chip">–</div>
+        </div>
+        <label class="field"><span>Manual score <small>(overrides vector)</small></span><input id="f-cvss-manual" type="number" inputmode="decimal" min="0" max="10" step="0.1" placeholder="none"></label>
+        <button class="row-btn" id="calc-edit-cvss">Score the vector in CVSS<span class="chev">›</span></button>
+      </div>
+
+      <h2 class="group-title">Treatment package</h2>
+      <div class="group" id="g-treat"></div>
+
+      <h2 class="group-title">Result <span class="muted small" id="res-ctx"></span></h2>
+      <div class="card result" id="result-card">
+        <div class="result-head">
+          <div>
+            <div class="eyebrow">Residual ÷ tolerated</div>
+            <div class="big" id="r-ratio">–</div>
+          </div>
+          <span class="pill lg" id="r-pill">–</span>
+        </div>
+        <svg class="gauge" id="r-gauge" viewBox="0 0 320 56" role="img" aria-label="Ratio gauge"></svg>
+        <dl class="kv" id="r-kv"></dl>
+        <div class="sens">
+          <div class="eyebrow">Sensitivity ±0.10</div>
+          <table class="tbl" id="r-sens"><tbody></tbody></table>
+          <p class="small muted" id="r-robust"></p>
+        </div>
+        <p class="small muted" id="r-driver"></p>
+        <div class="err" id="calc-error" hidden></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btn-save">Save to register</button>
+        <button class="btn" id="btn-new">New scenario</button>
+      </div>
+      <div class="actions">
+        <button class="btn ai" data-ai-task="explain"><span class="spark">✦</span> Explain with Apple Intelligence</button>
+        <button class="btn ai" data-ai-task="treat"><span class="spark">✦</span> Suggest treatments</button>
+      </div>
+      <div class="confirm" id="del-wrap" hidden>
+        <button class="btn danger-outline" id="btn-del">Delete this scenario</button>
+        <div class="confirm-row" id="del-confirm" hidden>
+          <span>Delete <b id="del-name"></b>?</span>
+          <button class="btn danger" id="btn-del-yes">Delete</button>
+          <button class="btn" id="btn-del-no">Keep</button>
+        </div>
+      </div>
+      <p class="foot">Quantitative results are relative decision-support indicators, not predictions of loss. Estimates need validation; risk decisions belong to management.</p>
+    </div>
+  </section>
+
+  <!-- ============ CVSS ============ -->
+  <section class="view" id="view-cvss" data-title="CVSS" hidden>
+    <header class="bar">
+      <div class="bar-row"><h1>CVSS v4.0</h1>
+        <button class="icon-btn" data-open-settings aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4Z"/></svg></button>
+      </div>
+      <div class="strip"><span class="strip-ratio" id="cv-strip-score">–</span><span class="pill" id="cv-strip-sev">–</span><span class="strip-id">Base (CVSS-B)</span></div>
+    </header>
+    <div class="content">
+      <div class="card cv-out">
+        <div class="mono vector" id="cv-vector"></div>
+        <div class="actions tight">
+          <button class="btn sm" id="cv-copy">Copy vector</button>
+          <button class="btn sm primary" id="cv-apply">Use in scenario</button>
+        </div>
+      </div>
+      <label class="field stack paste"><span>Paste a vector</span><input id="cv-paste" class="mono" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CVSS:4.0/AV:N/AC:L/…"></label>
+      <div class="err" id="cv-error" hidden></div>
+      <div id="cv-metrics"></div>
+      <p class="foot">CVSS measures the technical severity of a weakness, not organizational risk. Use it inside the CRG formula, never on its own. Scoring follows the FIRST CVSS v4.0 specification (base metrics).</p>
+    </div>
+  </section>
+
+  <!-- ============ REGISTER ============ -->
+  <section class="view" id="view-reg" data-title="Register" hidden>
+    <header class="bar">
+      <div class="bar-row"><h1>Register</h1>
+        <button class="icon-btn" data-open-settings aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4Z"/></svg></button>
+      </div>
+      <div class="strip" id="reg-strip"></div>
+    </header>
+    <div class="content">
+      <div class="note example" id="reg-example-note" hidden>These are the 30 scenarios of the fictional MediBec teaching case. Your own scenarios are added alongside them; clear the register to start fresh.</div>
+      <div class="tiles" id="reg-tiles"></div>
+      <div class="dist" id="reg-dist" aria-hidden="true"></div>
+      <h2 class="group-title">Scenarios <span class="muted small">sorted by residual ÷ tolerated</span></h2>
+      <div class="group list" id="reg-list"></div>
+      <div class="empty" id="reg-empty" hidden>
+        <p><b>No scenarios yet.</b> Save one from the Risk tab, import a CyberRiskGuardian JSON file, or load the MediBec example to explore.</p>
+      </div>
+      <div class="actions wrap">
+        <button class="btn primary" id="reg-new">New scenario</button>
+        <button class="btn" id="reg-export-json">Export JSON</button>
+        <button class="btn" id="reg-export-csv">Export CSV</button>
+        <label class="btn file">Import JSON<input type="file" id="reg-import" accept="application/json,.json"></label>
+        <button class="btn" id="reg-sample">Load MediBec example</button>
+      </div>
+      <div class="confirm">
+        <button class="btn danger-outline" id="reg-clear">Clear register</button>
+        <div class="confirm-row" id="reg-clear-confirm" hidden>
+          <span>Delete all <b id="reg-count"></b> scenarios on this iPhone?</span>
+          <button class="btn danger" id="reg-clear-yes">Delete all</button>
+          <button class="btn" id="reg-clear-no">Keep</button>
+        </div>
+      </div>
+      <p class="foot">The register is stored only on this device. Export it regularly; the JSON file opens in the CyberRiskGuardian plugin (crg_calc.py, build_workbook.py).</p>
+    </div>
+  </section>
+
+  <!-- ============ BUDGET ============ -->
+  <section class="view" id="view-budget" data-title="Budget" hidden>
+    <header class="bar">
+      <div class="bar-row"><h1>Budget</h1>
+        <button class="icon-btn" data-open-settings aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4Z"/></svg></button>
+      </div>
+      <div class="strip"><span class="strip-ratio" id="bd-strip-pct">–</span><span class="pill" id="bd-strip-pos">–</span><span class="strip-id">of IT budget</span></div>
+    </header>
+    <div class="content">
+      <h2 class="group-title">Inputs</h2>
+      <div class="group">
+        <label class="field"><span>Total IT budget <small>incl. salaries</small></span><input id="bd-it" type="text" inputmode="decimal" autocomplete="off"></label>
+        <div id="bd-appetite-row"></div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Appetite-consistent cybersecurity budget</div>
+        <div class="big" id="bd-target-amt">–</div>
+        <div class="muted" id="bd-target-pct"></div>
+        <svg class="band" id="bd-band" viewBox="0 -14 320 84" role="img" aria-label="Budget band 4 to 12 percent"></svg>
+        <dl class="kv" id="bd-kv"></dl>
+      </div>
+      <h2 class="group-title">Planned cybersecurity spend</h2>
+      <div class="group">
+        <label class="field"><span>Year 1</span><input id="bd-y1" type="text" inputmode="decimal" autocomplete="off" placeholder="optional"></label>
+        <label class="field"><span>Year 2</span><input id="bd-y2" type="text" inputmode="decimal" autocomplete="off" placeholder="optional"></label>
+        <label class="field"><span>Year 3</span><input id="bd-y3" type="text" inputmode="decimal" autocomplete="off" placeholder="optional"></label>
+      </div>
+      <div class="tbl-wrap"><table class="tbl" id="bd-years"><thead><tr><th>Year</th><th>Spend</th><th>% IT</th><th>Implied appetite</th></tr></thead><tbody></tbody></table></div>
+      <p class="foot">Guideline: a cybersecurity budget of 4% to 12% of the total IT budget, salaries included. 4% reflects a risk-seeking position (appetite 0.70), 7.8% the risk-neutral median (0.50), 12% a risk-averse position (0.30). Linear between anchors.</p>
+    </div>
+  </section>
+
+  <!-- ============ AI ============ -->
+  <section class="view" id="view-ai" data-title="Assistant" hidden>
+    <header class="bar">
+      <div class="bar-row"><h1>Assistant</h1>
+        <button class="icon-btn" data-open-settings aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4Z"/></svg></button>
+      </div>
+      <div class="strip"><span class="spark big-spark">✦</span><span class="strip-id">Apple Intelligence through the Shortcuts app</span></div>
+    </header>
+    <div class="content">
+
+      <div class="card pending" id="ai-pending" hidden>
+        <div class="eyebrow">Waiting for Apple Intelligence</div>
+        <p id="ai-pending-text">When the Shortcut finishes, come back here and tap <b>Paste result</b>.</p>
+        <div class="actions tight">
+          <button class="btn primary" id="ai-paste">Paste result</button>
+          <button class="btn" id="ai-cancel">Cancel</button>
+        </div>
+        <label class="field stack"><span>Or paste it here</span><textarea id="ai-manual" rows="4" placeholder="Long-press, then Paste"></textarea></label>
+        <button class="btn sm" id="ai-manual-go">Use pasted text</button>
+      </div>
+
+      <div id="ai-output"></div>
+
+      <h2 class="group-title">Generate scenarios</h2>
+      <div class="group">
+        <label class="field stack"><span>Organization context</span><textarea id="ai-ctx" rows="5" placeholder="Sector, mission, crown-jewel services and systems, cloud and suppliers, known weaknesses, regulations. Avoid names and confidential details."></textarea></label>
+        <label class="field"><span>Number of scenarios</span><select id="ai-n"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></label>
+        <button class="row-btn ai" data-ai-task="scenarios"><span><span class="spark">✦</span> Generate scenarios</span><span class="chev">›</span></button>
+      </div>
+
+      <h2 class="group-title">About the current scenario</h2>
+      <div class="group">
+        <div class="row"><div class="row-main"><div class="row-label" id="ai-cur-name">–</div><div class="small muted" id="ai-cur-meta"></div></div></div>
+        <button class="row-btn ai" data-ai-task="explain"><span><span class="spark">✦</span> Explain the result for management</span><span class="chev">›</span></button>
+        <button class="row-btn ai" data-ai-task="treat"><span><span class="spark">✦</span> Suggest treatment measures</span><span class="chev">›</span></button>
+        <button class="row-btn ai" data-ai-task="kri"><span><span class="spark">✦</span> Propose key risk indicators</span><span class="chev">›</span></button>
+      </div>
+
+      <h2 class="group-title">Ask a question</h2>
+      <div class="group">
+        <label class="field stack"><span>Question</span><textarea id="ai-q" rows="3" placeholder="e.g. How should I estimate resilience for a clinic with no tested incident response plan?"></textarea></label>
+        <button class="row-btn ai" data-ai-task="ask"><span><span class="spark">✦</span> Ask</span><span class="chev">›</span></button>
+      </div>
+
+      <h2 class="group-title">Setup</h2>
+      <div class="group">
+        <details class="setup" id="ai-setup">
+          <summary>Create the “<span class="sc-name">CRG Assistant</span>” Shortcut (2 minutes, once)</summary>
+          <ol>
+            <li>Open the <b>Shortcuts</b> app, tap <b>+</b>, and name the shortcut <b class="sc-name">CRG Assistant</b> exactly.</li>
+            <li>Add the action <b>Use Model</b> (Apple Intelligence). Choose <b>Private Cloud Compute</b> for the best scenarios, or <b>On-Device</b> to keep everything on the iPhone. Do not choose ChatGPT for confidential work.</li>
+            <li>Tap the request field and insert the <b>Shortcut Input</b> variable. If Shortcuts adds “Receive input from”, set it to <b>Text</b>.</li>
+            <li>Add <b>Copy to Clipboard</b> with the model's <b>Response</b>.</li>
+            <li>Add <b>Stop and Output</b> with the <b>Response</b>.</li>
+            <li>Optional: add <b>Show Notification</b> “Result copied. Return to CRG.”</li>
+            <li>Tap <b>Test the Shortcut</b> below.</li>
+          </ol>
+          <p class="small muted">Requires an iPhone with Apple Intelligence (iPhone 15 Pro or later), a recent iOS with the Use Model action, and Apple Intelligence turned on. Availability depends on language and region.</p>
+        </details>
+        <button class="row-btn" data-ai-task="test"><span>Test the Shortcut</span><span class="chev">›</span></button>
+      </div>
+      <p class="foot">The app sends only the text shown in each request to your Shortcut. On-Device keeps it on the iPhone; Private Cloud Compute processes it on Apple servers without retaining it. AI output is an analytical hypothesis to validate: it never changes your numbers by itself.</p>
+    </div>
+  </section>
+
+  <!-- ============ TAB BAR ============ -->
+  <nav class="tabbar" aria-label="Sections">
+    <button class="tab active" data-view="calc"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Risk</span></button>
+    <button class="tab" data-view="cvss"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.4"/></svg><span>CVSS</span></button>
+    <button class="tab" data-view="reg"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.3"/><circle cx="4.5" cy="12" r="1.3"/><circle cx="4.5" cy="18" r="1.3"/></svg><span>Register</span></button>
+    <button class="tab" data-view="budget"><svg viewBox="0 0 24 24"><path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/></svg><span>Budget</span></button>
+    <button class="tab" data-view="ai"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7Z"/></svg><span>Assistant</span></button>
+  </nav>
+
+  <!-- ============ SETTINGS ============ -->
+  <dialog id="settings">
+    <form method="dialog" class="sheet">
+      <div class="sheet-head"><h2>Settings</h2><button class="link" value="close">Done</button></div>
+      <h3 class="group-title">Assessment</h3>
+      <div class="group">
+        <div id="set-appetite-row"></div>
+        <label class="field"><span>Factor</span><input id="set-factor" type="number" inputmode="decimal" min="1" step="1"></label>
+        <label class="field"><span>Currency</span><input id="set-currency" type="text" maxlength="4" autocapitalize="characters"></label>
+      </div>
+      <p class="small muted pad">Appetite anchors: 0.1–0.2 very risk averse · 0.3 low · 0.5 neutral · 0.7 high · 0.8–0.9 very high. The factor is held constant across scenarios (1,000 by default).</p>
+      <h3 class="group-title">Apple Intelligence</h3>
+      <div class="group">
+        <label class="field"><span>Shortcut name</span><input id="set-shortcut" type="text" autocomplete="off"></label>
+        <label class="field"><span>Response language</span><select id="set-lang"><option value="en">English</option><option value="fr">Français</option></select></label>
+        <label class="field switch"><span>Return automatically <small>(Safari only)</small></span><input id="set-callback" type="checkbox"></label>
+      </div>
+      <p class="small muted pad">From the Home Screen app, results come back through the clipboard. In a Safari tab, “Return automatically” reopens this page with the answer.</p>
+      <h3 class="group-title">About</h3>
+      <div class="group">
+        <div class="row"><div class="row-main"><div class="row-label">CyberRiskGuardian Mobile <span class="muted" id="app-version"></span></div><div class="small muted">© 2026 Marc-André Léger · CC BY-NC 4.0 · Formulas: CRG Excel Guide v1.0c, s.11</div></div></div>
+        <a class="row-btn" href="https://github.com/ITriskMgr/CyberRiskGuardian_IOS" target="_blank" rel="noopener"><span>App source on GitHub</span><span class="chev">›</span></a>
+        <a class="row-btn" href="https://github.com/ITriskMgr/CyberRiskGuardian" target="_blank" rel="noopener"><span>Claude plugin and methodology</span><span class="chev">›</span></a>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+<script src="cvss4.js"></script>
+<script src="crg.js"></script>
+<script src="sample.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
