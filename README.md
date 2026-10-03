@@ -4,6 +4,8 @@ An installable iPhone and iPad app for scenario-driven cybersecurity risk assess
 
 **Open the app:** https://itriskmgr.github.io/CyberRiskGuardian_IOS/
 
+**User guide:** [USER_GUIDE.md](USER_GUIDE.md) — installation (with French iOS labels), every tab, Apple Intelligence setup, privacy and troubleshooting.
+
 ## Install on iPhone
 
 1. Open the link above in **Safari**.

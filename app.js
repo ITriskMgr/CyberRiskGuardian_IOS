@@ -2,7 +2,7 @@
  * (c) 2026 Marc-André Léger — CC BY-NC 4.0 */
 (function () {
   "use strict";
-  const VERSION = "1.0.1";
+  const VERSION = "1.0.2";
   const KEY = "crg.mobile.v1";
   const $ = id => document.getElementById(id);
   const PARAMS = CRG.PARAMS;
